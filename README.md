@@ -1,4 +1,11 @@
-# Metal for Accelerating Ray Tracing
+# Metal Ray Tracing
+
+This is a clone of the repo downloaded from [Apple](https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing). Original project only supports XCode build system. The project goals are:
+
+- Add support for CMake build system.
+    - Additionally adding new language support for Metal shaders in CMake.
+- Add support for Conan. The dependencies of this project are pretty light (just a few macOS frameworks), but we might want to add more features in the future.
+- Once the project builds with CMake/Conan, perhaps add some fun features like loading custom geometry.
 
 Use the Metal Performance Shaders ray intersector to perform ray-traced rendering.
 
