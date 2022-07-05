@@ -236,7 +236,8 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         device Ray* rays,
                         device Ray* shadowRays,
                         device Intersection* intersections,
-                        device float3* vertexColors,
+                        device uint* vertexToMaterial,
+                        device Material* materials,
                         device float3* vertexNormals,
                         device uint* triangleMasks,
                         constant unsigned int& bounce,
@@ -287,8 +288,10 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // surface normal
                 lightColor *= saturate(dot(surfaceNormal, lightDirection));
 
+                auto const material = materials[vertexToMaterial[intersection.primitiveIndex*3]];
+
                 // Interpolate the vertex color at the intersection point
-                color *= interpolateVertexAttribute(vertexColors, intersection);
+                color *= material.albedo;
 
                 // Compute the shadow ray. The shadow ray will check if the sample position on the
                 // light source is actually visible from the intersection point we are shading.

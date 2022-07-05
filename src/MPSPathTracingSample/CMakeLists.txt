@@ -21,7 +21,8 @@ add_executable(
 
 set_property(TARGET MPSPathTracingSample PROPERTY CXX_STANDARD 20)
 
-target_include_directories(MPSPathTracingSample PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(MPSPathTracingSample
+                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(
     MPSPathTracingSample

@@ -33,7 +33,8 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
     id<MTLBuffer> _vertexPositionBuffer;
     id<MTLBuffer> _vertexNormalBuffer;
-    id<MTLBuffer> _vertexColorBuffer;
+    id<MTLBuffer> _vertexToMaterialBuffer;
+    id<MTLBuffer> _materialBuffer;
     id<MTLBuffer> _rayBuffer;
     id<MTLBuffer> _shadowRayBuffer;
     id<MTLBuffer> _intersectionBuffer;
@@ -155,28 +156,32 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     float4x4 transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(0.5f, 1.98f, 0.5f);
 
     // Light source
-    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true, TRIANGLE_MASK_LIGHT);
+    createCube(FACE_MASK_POSITIVE_Y, transform, true, TRIANGLE_MASK_LIGHT, { Material::Type::Lambertian, vector_float3{ 1.0f, 1.0f, 1.0f } });
 
     transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(2.0f, 2.0f, 2.0f);
 
     // Top, bottom, and back walls
-    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, vector3(0.725f, 0.71f, 0.68f), transform, true, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z,
+               transform,
+               true,
+               TRIANGLE_MASK_GEOMETRY,
+               { Material::Type::Lambertian, vector_float3{ 0.725f, 0.71f, 0.68f } });
 
     // Left wall
-    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.63f, 0.065f, 0.05f } });
 
     // Right wall
-    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_POSITIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.14f, 0.45f, 0.091f } });
 
     transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) * matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 0.6f, 0.6f);
 
     // Short box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.725f, 0.71f, 0.68f } });
 
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) * matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 1.2f, 0.6f);
 
     // Tall box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.725f, 0.71f, 0.68f } });
 }
 
 - (void)createBuffers
@@ -202,25 +207,26 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
-    _vertexPositionBuffer = [_device newBufferWithLength:vertices.size() * sizeof(float3) options:options];
-    _vertexColorBuffer = [_device newBufferWithLength:colors.size() * sizeof(float3) options:options];
-    _vertexNormalBuffer = [_device newBufferWithLength:normals.size() * sizeof(float3) options:options];
-    _triangleMaskBuffer = [_device newBufferWithLength:masks.size() * sizeof(uint32_t) options:options];
+    _vertexPositionBuffer = [_device newBufferWithLength:vertices.size() * sizeof(decltype(vertices)::value_type) options:options];
+    _vertexToMaterialBuffer = [_device newBufferWithLength:vertexToMaterial.size() * sizeof(decltype(vertexToMaterial)::value_type) options:options];
+    _materialBuffer = [_device newBufferWithLength:materials.size() * sizeof(decltype(materials)::value_type) options:options];
+    _vertexNormalBuffer = [_device newBufferWithLength:normals.size() * sizeof(decltype(normals)::value_type) options:options];
+    _triangleMaskBuffer = [_device newBufferWithLength:masks.size() * sizeof(decltype(masks)::value_type) options:options];
 
     // Copy vertex data into buffers
-    memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
-    memcpy(_vertexColorBuffer.contents, &colors[0], _vertexColorBuffer.length);
-    memcpy(_vertexNormalBuffer.contents, &normals[0], _vertexNormalBuffer.length);
-    memcpy(_triangleMaskBuffer.contents, &masks[0], _triangleMaskBuffer.length);
+    memcpy(_vertexPositionBuffer.contents, vertices.data(), _vertexPositionBuffer.length);
+    memcpy(_vertexToMaterialBuffer.contents, vertexToMaterial.data(), _vertexToMaterialBuffer.length);
+    memcpy(_materialBuffer.contents, materials.data(), _materialBuffer.length);
+    memcpy(_vertexNormalBuffer.contents, normals.data(), _vertexNormalBuffer.length);
+    memcpy(_triangleMaskBuffer.contents, masks.data(), _triangleMaskBuffer.length);
 
     // When using managed buffers, we need to indicate that we modified the buffer so that the GPU
     // copy can be updated
-#if !TARGET_OS_IPHONE
     [_vertexPositionBuffer didModifyRange:NSMakeRange(0, _vertexPositionBuffer.length)];
-    [_vertexColorBuffer didModifyRange:NSMakeRange(0, _vertexColorBuffer.length)];
+    [_vertexToMaterialBuffer didModifyRange:NSMakeRange(0, _vertexToMaterialBuffer.length)];
+    [_materialBuffer didModifyRange:NSMakeRange(0, _materialBuffer.length)];
     [_vertexNormalBuffer didModifyRange:NSMakeRange(0, _vertexNormalBuffer.length)];
     [_triangleMaskBuffer didModifyRange:NSMakeRange(0, _triangleMaskBuffer.length)];
-#endif
 }
 
 - (void)createIntersector
@@ -417,10 +423,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         [computeEncoder setBuffer:_rayBuffer offset:0 atIndex:1];
         [computeEncoder setBuffer:_shadowRayBuffer offset:0 atIndex:2];
         [computeEncoder setBuffer:_intersectionBuffer offset:0 atIndex:3];
-        [computeEncoder setBuffer:_vertexColorBuffer offset:0 atIndex:4];
-        [computeEncoder setBuffer:_vertexNormalBuffer offset:0 atIndex:5];
-        [computeEncoder setBuffer:_triangleMaskBuffer offset:0 atIndex:6];
-        [computeEncoder setBytes:&bounce length:sizeof(bounce) atIndex:7];
+        [computeEncoder setBuffer:_vertexToMaterialBuffer offset:0 atIndex:4];
+        [computeEncoder setBuffer:_materialBuffer offset:0 atIndex:5];
+        [computeEncoder setBuffer:_vertexNormalBuffer offset:0 atIndex:6];
+        [computeEncoder setBuffer:_triangleMaskBuffer offset:0 atIndex:7];
+        [computeEncoder setBytes:&bounce length:sizeof(bounce) atIndex:8];
 
         [computeEncoder setTexture:_randomTexture atIndex:0];
         [computeEncoder setTexture:_renderTargets[0] atIndex:1];
