@@ -1,0 +1,12 @@
+set(CMAKE_InterfaceBuilder_COMPILER "@CMAKE_InterfaceBuilder_COMPILER@")
+
+set(CMAKE_InterfaceBuilder_COMPILER_LOADED 1)
+set(CMAKE_InterfaceBuilder_COMPILER_WORKS "@CMAKE_InterfaceBuilder_COMPILER_WORKS@")
+
+set(CMAKE_InterfaceBuilder_COMPILER_ENV_VAR "INTERFACEBUILDERC")
+
+set(CMAKE_InterfaceBuilder_COMPILER_ID_RUN 1)
+set(CMAKE_InterfaceBuilder_SOURCE_FILE_EXTENSIONS storyboard)
+set(CMAKE_SHARED_LIBRARY_PREFIX_InterfaceBuilder "")
+
+set(CMAKE_InterfaceBuilder_IMPLICIT_INCLUDE_DIRECTORIES "@CMAKE_InterfaceBuilder_IMPLICIT_INCLUDE_DIRECTORIES@")
