@@ -10,21 +10,21 @@ Implementation for our iOS view controller
 
 @implementation GameViewController
 {
-    MTKView *_view;
+    MTKView* _view;
 
-    Renderer *_renderer;
+    Renderer* _renderer;
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
 
-    _view = (MTKView *)self.view;
+    _view = (MTKView*) self.view;
 
     _view.device = MTLCreateSystemDefaultDevice();
     _view.backgroundColor = UIColor.clearColor;
 
-    if(!_view.device)
+    if (!_view.device)
     {
         NSLog(@"Metal is not supported on this device");
         self.view = [[UIView alloc] initWithFrame:self.view.frame];

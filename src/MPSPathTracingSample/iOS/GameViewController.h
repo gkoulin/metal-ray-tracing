@@ -5,10 +5,10 @@ Abstract:
 Header for our iOS view controller
 */
 
-#import <UIKit/UIKit.h>
+#import "Renderer.h"
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
-#import "Renderer.h"
+#import <UIKit/UIKit.h>
 
 // Our iOS view controller
 @interface GameViewController : UIViewController

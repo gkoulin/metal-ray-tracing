@@ -9,6 +9,4 @@ Header for our macOS Application Delegate
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
-
 @end
-
