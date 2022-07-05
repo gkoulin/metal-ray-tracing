@@ -1,0 +1,122 @@
+# Access modifiers on the left.
+AccessModifierOffset: -8
+
+# Align escaped newlines as far left as possible.
+AlignEscapedNewlinesLeft: true
+
+# Align all trailing comments.
+AlignTrailingComments: true
+
+# Don't allow parameters to be placed on the next line, even though BinPackParameters is false.
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# Do not allow short functions/if statements/loops on a single line.
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+# Don't force breaks before multiline strings.
+AlwaysBreakBeforeMultilineStrings: false
+
+# Force breaks before template declarations.
+AlwaysBreakTemplateDeclarations: "Yes"
+
+# Arguments and parameters are either on one line or on one line each.
+BinPackArguments: false
+BinPackParameters: false
+
+# Do not break before binary operators.
+BreakBeforeBinaryOperators: None
+
+# Use the Allman brace breaking style: always on a new line..
+BreakBeforeBraces: Allman
+
+# Do not place ternary operators after line breaks.
+BreakBeforeTernaryOperators: false
+
+# Force columns to be less than 160 characters.
+ColumnLimit: 160
+
+# Constructor initializer all in one line or all on their own line.
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+
+# Do not indent continuations.
+ContinuationIndentWidth: 0
+
+# Do not use braced lists in c++11 style.
+Cpp11BracedListStyle: false
+
+# Do not derive pointer alignment.
+DerivePointerAlignment: false
+
+# Order for which to sort included header files.
+IncludeCategories:
+  - Regex: '^\".*'
+    Priority: -9000
+  - Regex: "   ^<.*"
+    Priority: -5000
+  - Regex: '^<.*\.h>'
+    Priority: -1000
+  - Regex: ".*"
+    Priority: -500
+
+# Case labes are indented.
+IndentCaseLabels: false
+
+# Do not indent function declarations.
+IndentFunctionDeclarationAfterType: false
+
+# Indentation is 8 characters.
+IndentWidth: 4
+
+# Do not keep empty lines at start of blocks.
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Keep at most 1 consecutive empty lines.
+MaxEmptyLinesToKeep: 1
+
+# Do not indent namespaces.
+NamespaceIndentation: All
+
+# Spaces for ObjC properties and protocol lists.
+ObjCSpaceAfterProperty: true
+ObjCSpaceBeforeProtocolList: true
+
+# Penalties.
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyBreakComment: 10
+PenaltyBreakFirstLessLess: 0
+PenaltyBreakString: 100
+PenaltyExcessCharacter: 20
+
+# Force pointers to typename (i.e. char* a instead of char *a).
+PointerAlignment: Left
+
+# Ensure included header files are sorted:
+SortIncludes: true
+
+# Spaces after C-style casts and before assignments.
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+
+# Only space before parentheses if they are control statements.
+SpaceBeforeParens: ControlStatements
+
+# Single space before trailing comments.
+SpacesBeforeTrailingComments: 1
+
+# No spaces in parentheses, angles or square brackets.
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Use c++11 as the language standard.
+Standard: Cpp11
+
+# Tabs are 8 characters wide.
+TabWidth: 4
+
+# Don't use tabs for indentation.
+UseTab: Never
