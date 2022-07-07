@@ -155,33 +155,43 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 {
     float4x4 transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(0.5f, 1.98f, 0.5f);
 
+    float3 const grey{ 0.725f, 0.71f, 0.68f };
+    float3 const azure{ 0.70f, 0.85f, 1.f };
+    float3 const cambridgeBlue{ 164 / 255.f, 194 / 255.f, 168 / 255.f };
+    float3 const fandangoPink{ 233 / 255.f, 73 / 255.f, 126 / 255.f };
+    float3 const amber{ 255 / 255.f, 125 / 255.f, 0 / 255.f };
+    float3 const cadet{ 79 / 255.f, 109 / 255.f, 122 / 255.f };
+    float3 const russianViolet{ 47 / 255.f, 24 / 255.f, 71 / 255.f };
+    float3 const white{ 1.f, 1.f, 1.f };
+
     // Light source
     createCube(FACE_MASK_POSITIVE_Y, transform, true, TRIANGLE_MASK_LIGHT, { Material::Type::Lambertian, vector_float3{ 1.0f, 1.0f, 1.0f } });
 
     transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(2.0f, 2.0f, 2.0f);
 
     // Top, bottom, and back walls
-    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z,
-               transform,
-               true,
-               TRIANGLE_MASK_GEOMETRY,
-               { Material::Type::Lambertian, vector_float3{ 0.725f, 0.71f, 0.68f } });
+    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, cadet });
 
     // Left wall
-    createCube(FACE_MASK_NEGATIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.63f, 0.065f, 0.05f } });
+    createCube(FACE_MASK_NEGATIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Metallic, white, 0.f });
 
     // Right wall
-    createCube(FACE_MASK_POSITIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.14f, 0.45f, 0.091f } });
+    createCube(FACE_MASK_POSITIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, fandangoPink });
 
     transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) * matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 0.6f, 0.6f);
 
     // Short box
-    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.725f, 0.71f, 0.68f } });
+    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, amber });
+
+    transform = matrix4x4_translation(0.3275f, 0.8f, 0.3725f) * matrix4x4_rotation(-0.7f, vector3(1.0f, 0.5f, 1.0f)) * matrix4x4_scale(0.2f, 0.2f, 0.2f);
+
+    // Small box on top of short box
+    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Metallic, white, 0.f });
 
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) * matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 1.2f, 0.6f);
 
     // Tall box
-    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, vector_float3{ 0.725f, 0.71f, 0.68f } });
+    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Metallic, vector_float3{ 0.63f, 0.065f, 0.05f }, 0.03 });
 }
 
 - (void)createBuffers
@@ -403,7 +413,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [computeEncoder endEncoding];
 
     // We will iterate over the next few kernels several times to allow light to bounce around the scene
-    for (int bounce = 0; bounce < 3; bounce++)
+    for (int bounce = 0; bounce < 5; bounce++)
     {
         _intersector.intersectionDataType = MPSIntersectionDataTypeDistancePrimitiveIndexCoordinates;
 
