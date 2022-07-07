@@ -127,7 +127,7 @@ kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
         // Map normalized pixel coordinates into camera's coordinate system
         ray.direction = normalize(uv.x * camera.right + uv.y * camera.up + camera.forward);
         // The camera emits primary rays
-        ray.mask = RAY_MASK_PRIMARY;
+        ray.mask = RayMask::Primary;
 
         // Don't limit intersection distance
         ray.maxDistance = INFINITY;
@@ -232,6 +232,22 @@ inline float3 alignHemisphereWithNormal(float3 sample, float3 normal)
     return sample.x * right + sample.y * up + sample.z * forward;
 }
 
+inline void moveRayOrigin(device Ray& ray, float distance)
+{
+    ray.origin = ray.origin + ray.direction * distance;
+    ray.maxDistance -= distance;
+}
+
+inline void nudgeRayOrigin(device Ray& ray)
+{
+    moveRayOrigin(ray, 1e-3f);
+}
+
+inline void terminateRay(device Ray& ray)
+{
+    ray.maxDistance = -1.0f;
+}
+
 void scatterLambertian(thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
 {
     // Next we choose a random direction to continue the path of the ray. This will
@@ -247,24 +263,20 @@ void scatterLambertian(thread random::RandomNumberGenerator& rng, device Ray& ra
     float3 sampleDirection = sampleCosineWeightedHemisphere(r);
     sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
 
-    ray.origin = shadowRay.origin;
     ray.direction = sampleDirection;
-    ray.mask = RAY_MASK_SECONDARY;
 }
 
 void scatterLambertian2(thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
 {
-    auto scatterDirection = metal::normalize(surfaceNormal + random::randomUnitVector(rng));
+    ray.direction = metal::normalize(surfaceNormal + random::randomUnitVector(rng));
 
     // Catch degenerate scatter direction
-    if (numeric::nearZero(scatterDirection))
+    if (numeric::nearZero(ray.direction))
     {
-        scatterDirection = surfaceNormal;
+        ray.direction = surfaceNormal;
     }
 
-    ray.origin = shadowRay.origin;
-    ray.direction = scatterDirection;
-    ray.mask = RAY_MASK_SECONDARY;
+    nudgeRayOrigin(ray);
 }
 
 void scatterMetallic(thread random::RandomNumberGenerator& rng, device Material const& material, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
@@ -276,19 +288,42 @@ void scatterMetallic(thread random::RandomNumberGenerator& rng, device Material 
     {
         ray.origin = shadowRay.origin;
         ray.direction = scattered;
-        ray.mask = RAY_MASK_SECONDARY;
+        nudgeRayOrigin(ray);
     }
     else
     {
-        // Terminate the ray's path
-        ray.maxDistance = -1.0f;
-        shadowRay.maxDistance = -1.0f;
+        terminateRay(ray);
+        terminateRay(shadowRay);
     }
 
     if (material.type & Material::Type::Mirror)
     {
-        shadowRay.maxDistance = -1.0f;
+        terminateRay(shadowRay);
     }
+}
+
+void scatterDielectric(thread random::RandomNumberGenerator& rng, device Material const& material, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
+{
+    auto const frontFace = metal::dot(ray.direction, surfaceNormal) < 0;
+
+    auto const refractionRatio = frontFace ? (1.0 / material.refractiveIndex) : material.refractiveIndex;
+    surfaceNormal = frontFace ? surfaceNormal : -surfaceNormal;
+
+    auto const cosTheta = metal::min(dot(-ray.direction, surfaceNormal), 1.0);
+    auto const sinTheta = metal::sqrt(1.0 - cosTheta * cosTheta);
+
+    auto const cannotRefract = refractionRatio * sinTheta > 1.0;
+
+    if (cannotRefract || numeric::reflectance(cosTheta, refractionRatio) > rng.randomFloat())
+    {
+        ray.direction = reflect(ray.direction, surfaceNormal);
+    }
+    else
+    {
+        ray.direction = refract(ray.direction, surfaceNormal, refractionRatio);
+    }
+
+    nudgeRayOrigin(ray);
 }
 
 // Consumes ray/triangle intersection results to compute the shaded image
@@ -321,7 +356,7 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
             // The light source is included in the acceleration structure so we can see it in the
             // final image. However, we will compute and sample the lighting directly, so we mask
             // the light out for shadow and secondary rays.
-            if (mask == TRIANGLE_MASK_GEOMETRY)
+            if (mask & TriangleMask::Geometry || mask & TriangleMask::Glass)
             {
                 // Compute intersection point
                 float3 intersectionPoint = ray.origin + ray.direction * intersection.distance;
@@ -357,23 +392,29 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // Update current ray color
                 ray.color *= material.albedo;
 
+                ray.origin = intersectionPoint;
+
+                ray.mask = RayMask::Secondary;
+
                 // Compute the shadow ray. The shadow ray will check if the sample position on the
                 // light source is actually visible from the intersection point we are shading.
                 // If it is, the lighting contribution we just computed will be added to the
                 // output image.
 
-                // Add a small offset to the intersection point to avoid intersecting the same
-                // triangle again.
-                shadowRay.origin = intersectionPoint + surfaceNormal * 1e-3f;
-
                 // Travel towards the light source
                 shadowRay.direction = lightDirection;
 
                 // Avoid intersecting the light source itself
-                shadowRay.mask = RAY_MASK_SHADOW;
+                shadowRay.mask = RayMask::Shadow;
+
+                shadowRay.origin = intersectionPoint;
 
                 // Don't overshoot the light source
                 shadowRay.maxDistance = lightDistance - 1e-3f;
+
+                // Add a small offset to the intersection point to avoid intersecting the same
+                // triangle again.
+                shadowRay.origin += surfaceNormal * 1e-3f;
 
                 // Multiply the color and lighting amount at the intersection point to get the final
                 // color, and pass it along with the shadow ray so that it can be added to the
@@ -390,6 +431,7 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                     scatterMetallic(rng, material, ray, shadowRay, surfaceNormal);
                     break;
                 case Material::Type::Dielectric:
+                    scatterDielectric(rng, material, ray, shadowRay, surfaceNormal);
                     break;
                 }
             }

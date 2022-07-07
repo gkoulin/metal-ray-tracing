@@ -60,8 +60,7 @@ namespace random
         while (true)
         {
             auto const p = rng.randomFloat3(-1.f, 1.f);
-            auto const l = metal::length(p);
-            if ((l * l) >= 1)
+            if (metal::length_squared(p) >= 1)
             {
                 continue;
             }

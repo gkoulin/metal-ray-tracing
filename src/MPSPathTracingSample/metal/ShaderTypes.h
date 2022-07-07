@@ -10,12 +10,19 @@ Header containing types and enum constants shared between Metal shaders and Swif
 
 #include <simd/simd.h>
 
-#define TRIANGLE_MASK_GEOMETRY 1
-#define TRIANGLE_MASK_LIGHT 2
+enum TriangleMask
+{
+    Geometry = (1 << 0),
+    Light = (1 << 1),
+    Glass = (1 << 2),
+};
 
-#define RAY_MASK_PRIMARY 3
-#define RAY_MASK_SHADOW 1
-#define RAY_MASK_SECONDARY 1
+enum RayMask
+{
+    Primary = TriangleMask::Geometry | TriangleMask::Light | TriangleMask::Glass,
+    Secondary = TriangleMask::Geometry | TriangleMask::Glass,
+    Shadow = TriangleMask::Geometry | TriangleMask::Glass,
+};
 
 struct Camera
 {
@@ -65,7 +72,7 @@ struct Material
     float roughness = 0.f;
 
     /// Refractive index for dielectric material.
-    float refractiveIndex = 0.f;
+    float refractiveIndex = 1.5f;
 
     /// Transparency amount. Ratio of dielectric to other.
     float transparency = 0.f;

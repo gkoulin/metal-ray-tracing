@@ -1,5 +1,3 @@
-set(CMAKE_Metal_OUTPUT_EXTENSION .air)
-
 # Load compiler-specific information.
 if(CMAKE_Metal_COMPILER_ID)
   include(Compiler/${CMAKE_Metal_COMPILER_ID}-Metal OPTIONAL)
@@ -13,8 +11,6 @@ if(CMAKE_Metal_COMPILER_ID)
     Platform/${CMAKE_EFFECTIVE_SYSTEM_NAME}-${CMAKE_Metal_COMPILER_ID}-Metal
     OPTIONAL)
 endif()
-
-set(CMAKE_INCLUDE_FLAG_Metal "-I ")
 
 include(CMakeCommonLanguageInclude)
 

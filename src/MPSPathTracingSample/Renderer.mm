@@ -165,39 +165,40 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     float3 const white{ 1.f, 1.f, 1.f };
 
     // Light source
-    createCube(FACE_MASK_POSITIVE_Y, transform, true, TRIANGLE_MASK_LIGHT, { Material::Type::Lambertian, white });
+    createCube(FACE_MASK_POSITIVE_Y, transform, true, TriangleMask::Light, { Material::Type::Lambertian, white });
 
     transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(2.0f, 2.0f, 2.0f);
 
     // Top, bottom, and back walls
-    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, grey });
+    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, transform, true, TriangleMask::Geometry, { Material::Type::Lambertian, grey });
 
     // Left wall
-    createCube(FACE_MASK_NEGATIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Mirror, white, 0.f });
+    createCube(FACE_MASK_NEGATIVE_X, transform, true, TriangleMask::Geometry, { Material::Type::Mirror, white, 0.f });
 
     // Right wall
-    createCube(FACE_MASK_POSITIVE_X, transform, true, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, forestGreen });
+    createCube(FACE_MASK_POSITIVE_X, transform, true, TriangleMask::Geometry, { Material::Type::Lambertian, forestGreen });
 
     transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) * matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 0.6f, 0.6f);
 
     // Short box
-    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, amber });
+    createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Lambertian, amber });
 
     { // small boxes loose pillar
         transform = matrix4x4_translation(0.3275f, 0.8f, 0.3725f) * matrix4x4_rotation(-0.7f, vector3(1.0f, 1.0f, 1.0f)) * matrix4x4_scale(0.2f, 0.2f, 0.2f);
-        createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Metallic, white, 0.f });
+        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Metallic, white, 0.f });
 
         transform = matrix4x4_translation(0.3275f, 1.1f, 0.3725f) * matrix4x4_rotation(1.3f, vector3(1.0f, 0.0f, 1.0f)) * matrix4x4_scale(0.13f, 0.13f, 0.13f);
-        createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, russianViolet });
+        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Lambertian, russianViolet });
 
         transform = matrix4x4_translation(0.3275f, 1.35f, 0.3725f) * matrix4x4_rotation(1.3f, vector3(1.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.1f, 0.1f, 0.1f);
-        createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Lambertian, cadet });
+        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Lambertian, cadet });
     }
 
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) * matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 1.2f, 0.6f);
 
     // Tall box
-    createCube(FACE_MASK_ALL, transform, false, TRIANGLE_MASK_GEOMETRY, { Material::Type::Metallic, russianViolet, 0.03 });
+    // createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Metallic, russianViolet, 0.03 });
+    createCube(FACE_MASK_ALL, transform, false, TriangleMask::Glass, { Material::Type::Dielectric, white, 0.03, 1.5f });
 }
 
 - (void)createBuffers
