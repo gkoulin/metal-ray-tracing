@@ -1,5 +1,5 @@
 # Access modifiers on the left.
-AccessModifierOffset: -8
+AccessModifierOffset: -4
 
 # Align escaped newlines as far left as possible.
 AlignEscapedNewlinesLeft: true
@@ -51,14 +51,14 @@ DerivePointerAlignment: false
 
 # Order for which to sort included header files.
 IncludeCategories:
-  - Regex: '^\".*'
-    Priority: -9000
-  - Regex: "   ^<.*"
-    Priority: -5000
-  - Regex: '^<.*\.h>'
-    Priority: -1000
-  - Regex: ".*"
-    Priority: -500
+    - Regex: '^\".*'
+      Priority: -9000
+    - Regex: "   ^<.*"
+      Priority: -5000
+    - Regex: '^<.*\.h>'
+      Priority: -1000
+    - Regex: ".*"
+      Priority: -500
 
 # Case labes are indented.
 IndentCaseLabels: false

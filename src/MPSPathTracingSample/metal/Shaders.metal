@@ -9,6 +9,8 @@ Metal shaders used for ray tracing
 #include <metal_stdlib>
 
 #import "ShaderTypes.h"
+#import "numeric.h"
+#import "random.h"
 
 using namespace metal;
 
@@ -75,7 +77,7 @@ float halton(unsigned int i, unsigned int d)
     {
         f = f * invB;
         r = r + f * (i % b);
-        i = i / b;
+        i = i * invB;
     }
 
     return r;
@@ -230,6 +232,41 @@ inline float3 alignHemisphereWithNormal(float3 sample, float3 normal)
     return sample.x * right + sample.y * up + sample.z * forward;
 }
 
+void scatterLambertian(constant Uniforms& uniforms, thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
+{
+    // Next we choose a random direction to continue the path of the ray. This will
+    // cause light to bounce between surfaces. Normally we would apply a fair bit of math
+    // to compute the fraction of reflected by the current intersection point to the
+    // previous point from the next point. However, by choosing a random direction with
+    // probability proportional to the cosine (dot product) of the angle between the
+    // sample direction and surface normal, the math entirely cancels out except for
+    // multiplying by the interpolated vertex color. This sampling strategy also reduces
+    // the amount of noise in the output image.
+    auto const r = rng.randomFloat3().xy;
+
+    float3 sampleDirection = sampleCosineWeightedHemisphere(r);
+    sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
+
+    ray.origin = shadowRay.origin;
+    ray.direction = sampleDirection;
+    ray.mask = RAY_MASK_SECONDARY;
+}
+
+void scatterLambertian2(constant Uniforms& uniforms, thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
+{
+    auto scatterDirection = metal::normalize(surfaceNormal + random::randomUnitVector(rng));
+
+    // Catch degenerate scatter direction
+    if (numeric::nearZero(scatterDirection))
+    {
+        scatterDirection = surfaceNormal;
+    }
+
+    ray.origin = shadowRay.origin;
+    ray.direction = scatterDirection;
+    ray.mask = RAY_MASK_SECONDARY;
+}
+
 // Consumes ray/triangle intersection results to compute the shaded image
 kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         constant Uniforms& uniforms,
@@ -249,9 +286,7 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
         unsigned int rayIdx = tid.y * uniforms.width + tid.x;
         device Ray& ray = rays[rayIdx];
         device Ray& shadowRay = shadowRays[rayIdx];
-        device Intersection& intersection = intersections[rayIdx];
-
-        float3 color = ray.color;
+        device Intersection const& intersection = intersections[rayIdx];
 
         // Intersection distance will be negative if ray missed or was disabled in a previous
         // iteration.
@@ -271,10 +306,13 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 float3 surfaceNormal = interpolateVertexAttribute(vertexNormals, intersection);
                 surfaceNormal = normalize(surfaceNormal);
 
-                unsigned int offset = randomTex.read(tid).x;
+                auto const offset = randomTex.read(tid).x;
 
                 // Look up two random numbers for this thread
-                float2 r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 0), halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 1));
+                // float2 r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 0), halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 1));
+
+                thread random::RandomNumberGenerator rng(offset + uniforms.frameIndex, 2 + bounce * 4 + 0);
+                float2 r = rng.randomFloat3().xy;
 
                 float3 lightDirection;
                 float3 lightColor;
@@ -288,10 +326,12 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // surface normal
                 lightColor *= saturate(dot(surfaceNormal, lightDirection));
 
-                auto const material = materials[vertexToMaterial[intersection.primitiveIndex*3]];
+                device Material const& material = materials[vertexToMaterial[intersection.primitiveIndex * 3]];
 
                 // Interpolate the vertex color at the intersection point
-                color *= material.albedo;
+
+                // Update current ray color
+                ray.color *= material.albedo;
 
                 // Compute the shadow ray. The shadow ray will check if the sample position on the
                 // light source is actually visible from the intersection point we are shading.
@@ -314,25 +354,18 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // Multiply the color and lighting amount at the intersection point to get the final
                 // color, and pass it along with the shadow ray so that it can be added to the
                 // output image if needed.
-                shadowRay.color = lightColor * color;
+                shadowRay.color = lightColor * ray.color;
 
-                // Next we choose a random direction to continue the path of the ray. This will
-                // cause light to bounce between surfaces. Normally we would apply a fair bit of math
-                // to compute the fraction of reflected by the current intersection point to the
-                // previous point from the next point. However, by choosing a random direction with
-                // probability proportional to the cosine (dot product) of the angle between the
-                // sample direction and surface normal, the math entirely cancels out except for
-                // multiplying by the interpolated vertex color. This sampling strategy also reduces
-                // the amount of noise in the output image.
-                r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2), halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 3));
-
-                float3 sampleDirection = sampleCosineWeightedHemisphere(r);
-                sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
-
-                ray.origin = intersectionPoint + surfaceNormal * 1e-3f;
-                ray.direction = sampleDirection;
-                ray.color = color;
-                ray.mask = RAY_MASK_SECONDARY;
+                switch (material.type)
+                {
+                case Material::Type::Lambertian:
+                    scatterLambertian2(uniforms, rng, ray, shadowRay, surfaceNormal);
+                    break;
+                case Material::Type::Metallic:
+                    break;
+                case Material::Type::Dielectric:
+                    break;
+                }
             }
             else
             {

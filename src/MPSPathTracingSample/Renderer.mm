@@ -10,8 +10,8 @@ Implementation for platform independent renderer class
 
 #import "Renderer.h"
 #import "Scene.h"
-#import "ShaderTypes.h"
 #import "Transforms.h"
+#import "metal/ShaderTypes.h"
 
 using namespace simd;
 

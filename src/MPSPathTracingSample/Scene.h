@@ -8,7 +8,7 @@ Header for scene creation functions
 #ifndef Scene_h
 #define Scene_h
 
-#include "ShaderTypes.h"
+#include "metal/ShaderTypes.h"
 #include <simd/simd.h>
 #include <vector>
 
