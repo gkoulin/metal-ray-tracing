@@ -232,7 +232,7 @@ inline float3 alignHemisphereWithNormal(float3 sample, float3 normal)
     return sample.x * right + sample.y * up + sample.z * forward;
 }
 
-void scatterLambertian(constant Uniforms& uniforms, thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
+void scatterLambertian(thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
 {
     // Next we choose a random direction to continue the path of the ray. This will
     // cause light to bounce between surfaces. Normally we would apply a fair bit of math
@@ -252,7 +252,7 @@ void scatterLambertian(constant Uniforms& uniforms, thread random::RandomNumberG
     ray.mask = RAY_MASK_SECONDARY;
 }
 
-void scatterLambertian2(constant Uniforms& uniforms, thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
+void scatterLambertian2(thread random::RandomNumberGenerator& rng, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
 {
     auto scatterDirection = metal::normalize(surfaceNormal + random::randomUnitVector(rng));
 
@@ -265,6 +265,25 @@ void scatterLambertian2(constant Uniforms& uniforms, thread random::RandomNumber
     ray.origin = shadowRay.origin;
     ray.direction = scatterDirection;
     ray.mask = RAY_MASK_SECONDARY;
+}
+
+void scatterMetallic(thread random::RandomNumberGenerator& rng, device Material const& material, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
+{
+    auto const reflected = reflect(ray.direction, surfaceNormal);
+    auto const scattered =  reflected + material.roughness * random::randomInUnitSphere(rng);
+
+    if (dot(scattered, surfaceNormal) > 0)
+    {
+        ray.origin = shadowRay.origin;
+        ray.direction = scattered;
+        ray.mask = RAY_MASK_SECONDARY;
+    }
+    else
+    {
+        // Terminate the ray's path
+        ray.maxDistance = -1.0f;
+        shadowRay.maxDistance = -1.0f;
+    }
 }
 
 // Consumes ray/triangle intersection results to compute the shaded image
@@ -359,9 +378,10 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 switch (material.type)
                 {
                 case Material::Type::Lambertian:
-                    scatterLambertian2(uniforms, rng, ray, shadowRay, surfaceNormal);
+                    scatterLambertian2(rng, ray, shadowRay, surfaceNormal);
                     break;
                 case Material::Type::Metallic:
+                scatterMetallic(rng, material, ray, shadowRay, surfaceNormal);
                     break;
                 case Material::Type::Dielectric:
                     break;
