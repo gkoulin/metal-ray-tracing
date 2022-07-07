@@ -52,6 +52,7 @@ struct Material
         Lambertian = (1 << 0),
         Metallic = (1 << 1),
         Dielectric = (1 << 2),
+        Mirror = (1 << 3),
     };
 
     /// Material type. Can be combination of two materials where `transparency` will define the amount of each.

@@ -270,7 +270,7 @@ void scatterLambertian2(thread random::RandomNumberGenerator& rng, device Ray& r
 void scatterMetallic(thread random::RandomNumberGenerator& rng, device Material const& material, device Ray& ray, device Ray& shadowRay, float3 surfaceNormal)
 {
     auto const reflected = reflect(ray.direction, surfaceNormal);
-    auto const scattered =  reflected + material.roughness * random::randomInUnitSphere(rng);
+    auto const scattered = reflected + material.roughness * random::randomInUnitSphere(rng);
 
     if (dot(scattered, surfaceNormal) > 0)
     {
@@ -282,6 +282,11 @@ void scatterMetallic(thread random::RandomNumberGenerator& rng, device Material 
     {
         // Terminate the ray's path
         ray.maxDistance = -1.0f;
+        shadowRay.maxDistance = -1.0f;
+    }
+
+    if (material.type & Material::Type::Mirror)
+    {
         shadowRay.maxDistance = -1.0f;
     }
 }
@@ -381,7 +386,8 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                     scatterLambertian2(rng, ray, shadowRay, surfaceNormal);
                     break;
                 case Material::Type::Metallic:
-                scatterMetallic(rng, material, ray, shadowRay, surfaceNormal);
+                case Material::Type::Mirror:
+                    scatterMetallic(rng, material, ray, shadowRay, surfaceNormal);
                     break;
                 case Material::Type::Dielectric:
                     break;
