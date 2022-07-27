@@ -181,17 +181,17 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) * matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 0.6f, 0.6f);
 
     // Short box
-    createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Lambertian, amber });
+    createCube(FACE_MASK_ALL, transform, false, TriangleMask::Glass, { Material::Type::Dielectric, amber, 0.f, 1.5f });
 
     { // small boxes loose pillar
         transform = matrix4x4_translation(0.3275f, 0.8f, 0.3725f) * matrix4x4_rotation(-0.7f, vector3(1.0f, 1.0f, 1.0f)) * matrix4x4_scale(0.2f, 0.2f, 0.2f);
-        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Metallic, white, 0.f });
+        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Glass, { Material::Type::Dielectric, white, 0.f, 1.8f });
 
         transform = matrix4x4_translation(0.3275f, 1.1f, 0.3725f) * matrix4x4_rotation(1.3f, vector3(1.0f, 0.0f, 1.0f)) * matrix4x4_scale(0.13f, 0.13f, 0.13f);
-        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Lambertian, russianViolet });
+        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Glass, { Material::Type::Dielectric, russianViolet, 0.f, 1.8f });
 
         transform = matrix4x4_translation(0.3275f, 1.35f, 0.3725f) * matrix4x4_rotation(1.3f, vector3(1.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.1f, 0.1f, 0.1f);
-        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Geometry, { Material::Type::Lambertian, cadet });
+        createCube(FACE_MASK_ALL, transform, false, TriangleMask::Glass, { Material::Type::Dielectric, cadet, 0.f, 1.8f });
     }
 
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) * matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) * matrix4x4_scale(0.6f, 1.2f, 0.6f);
@@ -420,7 +420,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [computeEncoder endEncoding];
 
     // We will iterate over the next few kernels several times to allow light to bounce around the scene
-    for (int bounce = 0; bounce < 5; bounce++)
+    for (int bounce = 0; bounce < 8; bounce++)
     {
         _intersector.intersectionDataType = MPSIntersectionDataTypeDistancePrimitiveIndexCoordinates;
 
